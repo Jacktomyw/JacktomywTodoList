@@ -44,16 +44,18 @@ public partial class MainWindow : Window
         _drag = true; _dp = e.GetPosition(this); CaptureMouse();
     }
 
+    private void SendToBottom() { var h = new WindowInteropHelper(this).Handle; if (h != IntPtr.Zero) Native.DesktopWindow.SetWindowPos(h, new IntPtr(1), 0, 0, 0, 0, 1 | 2 | 0x10 | 0x40); }
+
     private void ChkBtn_Loaded(object sender, RoutedEventArgs e) { var b = (Button)sender; if (b.DataContext is TodoItem it) { b.Content = it.IsCompleted ? "\u2713" : ""; b.Foreground = it.IsCompleted ? new SolidColorBrush(Color.FromRgb(0x88, 0xFF, 0x88)) : new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)); } }
     private void GroupHeader_Click(object sender, MouseButtonEventArgs e) { if (((Grid)sender).DataContext is TodoGroupViewModel g) g.IsExpanded = !g.IsExpanded; }
     private async void ChkBtn_Click(object sender, RoutedEventArgs e) { var b = (Button)sender; if (b.DataContext is TodoItem it) { it.IsCompleted = !it.IsCompleted; b.Content = it.IsCompleted ? "\u2713" : ""; b.Foreground = it.IsCompleted ? new SolidColorBrush(Color.FromRgb(0x88, 0xFF, 0x88)) : new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)); await _repo.UpdateAsync(it); await _vm.LoadAsync(); } }
     private void GroupModeBtn_Click(object sender, RoutedEventArgs e) { _vm.IsGroupedMode = !_vm.IsGroupedMode; _settingsSvc.IsGroupedMode = _vm.IsGroupedMode; UpdateGroupModeBtn(); _ = _vm.LoadAsync(); }
     private void UpdateGroupModeBtn() { GroupModeBtn.Content = _vm.IsGroupedMode ? "G" : "g"; GroupModeBtn.Foreground = _vm.IsGroupedMode ? new SolidColorBrush(Color.FromRgb(0x88, 0xFF, 0x88)) : new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)); GroupModeBtn.ToolTip = _vm.IsGroupedMode ? "分组模式: 开" : "分组模式: 关"; }
-    private void EditBtn_Click(object sender, RoutedEventArgs e) { if (((Button)sender).DataContext is TodoItem item) { var d = new Views.AddEditDialog(_repo, item, () => _ = _vm.LoadAsync()) { Owner = this, Topmost = true }; d.ShowDialog(); } }
-    private async void DeleteBtn_Click(object sender, RoutedEventArgs e) { if (((Button)sender).DataContext is TodoItem item) { if (RequireConfirm(item) && new Views.ConfirmDialog($"确定要删除[{item.Title}] 吗？", "确认删除") { Owner = this, Topmost = true }.ShowDialog() != true) return; _vm.AllItems.Remove(item); await _repo.DeleteAsync(item.Id); await _vm.LoadAsync(); } }
+    private void EditBtn_Click(object sender, RoutedEventArgs e) { if (((Button)sender).DataContext is TodoItem item) { var d = new Views.AddEditDialog(_repo, item, () => _ = _vm.LoadAsync()) { Owner = this, Topmost = true }; d.ShowDialog(); SendToBottom(); } }
+    private async void DeleteBtn_Click(object sender, RoutedEventArgs e) { if (((Button)sender).DataContext is TodoItem item) { if (RequireConfirm(item) && new Views.ConfirmDialog($"确定要删除[{item.Title}] 吗？", "确认删除") { Owner = this, Topmost = true }.ShowDialog() != true) { SendToBottom(); return; } _vm.AllItems.Remove(item); await _repo.DeleteAsync(item.Id); await _vm.LoadAsync(); SendToBottom(); } }
     private bool RequireConfirm(TodoItem it) => _settingsSvc.DeleteConfirmMode switch { DeleteConfirmMode.Never => false, DeleteConfirmMode.Uncompleted => !it.IsCompleted, _ => true };
-    private void AddBtn_Click(object sender, RoutedEventArgs e) { new Views.AddEditDialog(_repo, null, () => _ = _vm.LoadAsync()) { Owner = this, Topmost = true }.ShowDialog(); }
-    private void GroupBtn_Click(object sender, RoutedEventArgs e) { new Views.GroupDialog(_vm.AllItems.ToList(), _repo, () => _ = _vm.LoadAsync()) { Owner = this, Topmost = true }.ShowDialog(); }
-    private void SettingsBtn_Click(object sender, RoutedEventArgs e) { new Views.SettingsWindow(_settingsSvc) { Owner = this, Topmost = true }.ShowDialog(); }
+    private void AddBtn_Click(object sender, RoutedEventArgs e) { new Views.AddEditDialog(_repo, null, () => _ = _vm.LoadAsync()) { Owner = this, Topmost = true }.ShowDialog(); SendToBottom(); }
+    private void GroupBtn_Click(object sender, RoutedEventArgs e) { new Views.GroupDialog(_vm.AllItems.ToList(), _repo, () => _ = _vm.LoadAsync()) { Owner = this, Topmost = true }.ShowDialog(); SendToBottom(); }
+    private void SettingsBtn_Click(object sender, RoutedEventArgs e) { new Views.SettingsWindow(_settingsSvc) { Owner = this, Topmost = true }.ShowDialog(); SendToBottom(); }
     private void CloseBtn_Click(object sender, RoutedEventArgs e) { if (!_settingsSvc.IsCloseConfirmEnabled) { Application.Current.Shutdown(); return; } if (new Views.ConfirmDialog("确定要退出 TodoWidget 吗？", "确认退出") { Owner = this, Topmost = true }.ShowDialog() == true) Application.Current.Shutdown(); }
 }

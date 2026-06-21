@@ -13,7 +13,14 @@ public class TodoRepository : IDisposable
     {
         _db = new TodoDbContext(dbPath);
         _db.Database.EnsureCreated();
+        MigrateSchemaAsync().Wait();
         MigrateDefault().Wait();
+    }
+
+    private async Task MigrateSchemaAsync()
+    {
+        try { await _db.Database.ExecuteSqlRawAsync("ALTER TABLE TodoItems ADD COLUMN IsRecurring INTEGER NOT NULL DEFAULT 0"); } catch { }
+        try { await _db.Database.ExecuteSqlRawAsync("ALTER TABLE TodoItems ADD COLUMN RecurringIntervalDays INTEGER NOT NULL DEFAULT 0"); } catch { }
     }
 
     private async Task MigrateDefault()
@@ -68,7 +75,20 @@ public class TodoRepository : IDisposable
         await _db.SaveChangesAsync();
     }
 
-    public async Task<int> DeleteExpiredAsync() { var now = DateTime.Now; var expired = await _db.TodoItems.Where(i => i.IsCompleted && i.DueDate != null && i.DueDate.Value.Date.AddDays(7) <= now).ToListAsync(); if (expired.Count > 0) { _db.TodoItems.RemoveRange(expired); await _db.SaveChangesAsync(); } return expired.Count; }
+    public async Task<int> DeleteExpiredAsync() { var now = DateTime.Now; var expired = await _db.TodoItems.Where(i => i.IsCompleted && !i.IsRecurring && i.DueDate != null && i.DueDate.Value.Date.AddDays(7) <= now).ToListAsync(); if (expired.Count > 0) { _db.TodoItems.RemoveRange(expired); await _db.SaveChangesAsync(); } return expired.Count; }
+
+    // Startup only: advance all past-due recurring tasks
+    public async Task AdvancePastDueRecurringAsync()
+    {
+        var now = DateTime.Now;
+        var due = await _db.TodoItems.Where(i => i.IsRecurring && i.DueDate != null && i.DueDate.Value <= now).ToListAsync();
+        foreach (var it in due)
+        {
+            while (it.DueDate!.Value <= now) it.DueDate = it.DueDate.Value.AddDays(it.RecurringIntervalDays);
+            it.IsCompleted = false;
+        }
+        if (due.Count > 0) await _db.SaveChangesAsync();
+    }
 
     public void Dispose() { if (!_disposed) { _db.Dispose(); _disposed = true; } }
 }

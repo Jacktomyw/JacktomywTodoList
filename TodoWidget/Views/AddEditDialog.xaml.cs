@@ -25,15 +25,26 @@ public partial class AddEditDialog : Window
             {
                 Title = "编辑待办事项"; TitleBox.Text = _edit.Title;
                 GroupCombo.SelectedItem = _edit.GroupName;
+                if (_edit.IsRecurring) { RecurringCheck.IsChecked = true; CycleDaysBox.Text = _edit.RecurringIntervalDays.ToString(); }
                 if (_edit.DueDate.HasValue) { RadioSpecific.IsChecked = true; DatePick.SelectedDate = _edit.DueDate.Value.Date; TimeBox.Text = _edit.DueDate.Value.Hour.ToString("D2"); }
             }
             GroupCombo.SelectedItem ??= _edit?.GroupName ?? "未分组";
         };
     }
 
+    private void RecurringCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        var rec = RecurringCheck.IsChecked == true;
+        RecurringPanel.Visibility = rec ? Visibility.Visible : Visibility.Collapsed;
+        PeriodGroupBox.Header = rec ? "下次刷新时间" : "到期时间";
+    }
+
     private async void SaveBtn_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(TitleBox.Text)) { new ConfirmDialog("请输入标题。", "提示", false) { Owner = this, Topmost = true }.ShowDialog(); return; }
+        var isRecurring = RecurringCheck.IsChecked == true;
+        int.TryParse(CycleDaysBox.Text, out var cycleDays);
+        if (isRecurring && cycleDays <= 0) { new ConfirmDialog("请输入有效的周期天数。", "提示", false) { Owner = this, Topmost = true }.ShowDialog(); return; }
         DateTime? due = null;
         if (RadioSpecific.IsChecked == true && DatePick.SelectedDate.HasValue)
         {
@@ -48,8 +59,8 @@ public partial class AddEditDialog : Window
             if (raw.Minute > 0) due = due.Value.AddHours(1);
         }
         var grp = GroupCombo.SelectedItem?.ToString() ?? "未分组";
-        if (_edit != null) { _edit.Title = TitleBox.Text.Trim(); _edit.GroupName = grp; _edit.DueDate = due; await _repo.UpdateAsync(_edit); }
-        else await _repo.AddAsync(new TodoItem { Title = TitleBox.Text.Trim(), GroupName = grp, DueDate = due, CreatedAt = DateTime.Now });
+        if (_edit != null) { _edit.Title = TitleBox.Text.Trim(); _edit.GroupName = grp; _edit.DueDate = due; _edit.IsRecurring = isRecurring; _edit.RecurringIntervalDays = cycleDays; await _repo.UpdateAsync(_edit); }
+        else await _repo.AddAsync(new TodoItem { Title = TitleBox.Text.Trim(), GroupName = grp, DueDate = due, IsRecurring = isRecurring, RecurringIntervalDays = cycleDays, CreatedAt = DateTime.Now });
         await _onSaved();
         DialogResult = true; Close();
     }

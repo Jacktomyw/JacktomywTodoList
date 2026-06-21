@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using TodoWidget.Data;
 using TodoWidget.Models;
 
@@ -11,6 +13,7 @@ public class MainViewModel : INotifyPropertyChanged
     private readonly TodoRepository _repo;
     private System.Timers.Timer _countdownTimer;
     private System.Timers.Timer? _midnightTimer;
+    private readonly ConcurrentDictionary<int, System.Timers.Timer> _recurringTimers = new();
 
     public ObservableCollection<TodoItem> AllItems { get; } = new();
     public ObservableCollection<TodoGroupViewModel> Groups { get; } = new();
@@ -61,6 +64,7 @@ public class MainViewModel : INotifyPropertyChanged
 
     public async Task StartupDeleteAndLoadAsync()
     {
+        await _repo.AdvancePastDueRecurringAsync();
         await _repo.DeleteExpiredAsync();
         await ReloadFromDbAsync();
         ScheduleMidnightTimer();
@@ -77,6 +81,41 @@ public class MainViewModel : INotifyPropertyChanged
         AllItems.Clear();
         foreach (var item in items) AllItems.Add(item);
         await RebuildGroupsAsync();
+        RescheduleAllRecurringTimers();
+    }
+
+    // --- per-task recurring timers ---
+    private void ScheduleRecurringTimer(TodoItem item)
+    {
+        if (!item.IsRecurring || !item.DueDate.HasValue) return;
+        CancelRecurringTimer(item.Id);
+        var msUntil = (item.DueDate.Value - DateTime.Now).TotalMilliseconds;
+        if (msUntil <= 0) msUntil = 1000;
+        var timer = new System.Timers.Timer(msUntil) { AutoReset = false };
+        var id = item.Id;
+        timer.Elapsed += async (_, _) =>
+        {
+            _recurringTimers.TryRemove(id, out _);
+            await _repo.AdvancePastDueRecurringAsync(); // advances this specific item + any others
+            var disp = Application.Current?.Dispatcher;
+            if (disp != null) await disp.InvokeAsync(async () => await ReloadFromDbAsync());
+            else await ReloadFromDbAsync();
+        };
+        timer.Start();
+        _recurringTimers[id] = timer;
+    }
+
+    private void CancelRecurringTimer(int id)
+    {
+        if (_recurringTimers.TryRemove(id, out var t)) { t.Stop(); t.Dispose(); }
+    }
+
+    private void RescheduleAllRecurringTimers()
+    {
+        foreach (var (_, timer) in _recurringTimers) { timer.Stop(); timer.Dispose(); }
+        _recurringTimers.Clear();
+        foreach (var item in AllItems.Where(i => i.IsRecurring))
+            ScheduleRecurringTimer(item);
     }
 
     private async Task RebuildGroupsAsync()

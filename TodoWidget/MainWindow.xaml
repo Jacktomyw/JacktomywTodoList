@@ -45,8 +45,13 @@
                                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                                     <TextBlock FontSize="12" Foreground="White" TextWrapping="Wrap"><Run Text="{Binding Title}"/><Run Text=" [" Foreground="#7777CC"/><Run Text="{Binding GroupName}" Foreground="#7777CC"/><Run Text="]" Foreground="#7777CC"/></TextBlock>
                                                     <TextBlock Text="{Binding RemainingDisplay, Mode=OneWay}" FontSize="11" Foreground="#FFCC88" Margin="0,1,0,0"/>
-                                                    <TextBlock FontSize="10" Foreground="#888888" Margin="0,1,0,0"><Run Text="到期: "/><Run Text="{Binding DueDateDisplay, Mode=OneWay}"/></TextBlock>
-                                                    <TextBlock Text="{Binding AutoDeleteDisplay, Mode=OneWay}" FontSize="10" Foreground="#AA6666"><TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers><DataTrigger Binding="{Binding IsCompleted}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
+                                                    <TextBlock FontSize="10" Foreground="#888888" Margin="0,1,0,0"><Run Text="{Binding DueDateLabel, Mode=OneWay}"/><Run Text=": "/><Run Text="{Binding DueDateDisplay, Mode=OneWay}"/></TextBlock>
+                                                    <TextBlock Text="{Binding RecurringInfo, Mode=OneWay}" FontSize="10" Foreground="#88AAFF">
+                                                        <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers><DataTrigger Binding="{Binding IsRecurring}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding AutoDeleteDisplay, Mode=OneWay}" FontSize="10" Foreground="#AA6666">
+                                                        <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers><DataTrigger Binding="{Binding IsCompleted}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger><DataTrigger Binding="{Binding IsRecurring}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                                                    </TextBlock>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                                     <Button Content="e" Width="22" Height="22" FontSize="9" Foreground="#8888CC" Background="Transparent" BorderThickness="0" Cursor="Hand" Click="EditBtn_Click"/>

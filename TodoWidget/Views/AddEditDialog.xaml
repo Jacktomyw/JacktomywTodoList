@@ -1,20 +1,26 @@
 <Window x:Class="TodoWidget.Views.AddEditDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="新建待办事项" Height="390" Width="410" WindowStartupLocation="Manual" ResizeMode="NoResize" WindowStyle="ToolWindow">
+        Title="新建待办事项" Height="470" Width="410" WindowStartupLocation="Manual" ResizeMode="NoResize" WindowStyle="ToolWindow">
     <Grid Margin="20">
-        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <TextBlock Grid.Row="0" Text="标题 *" FontWeight="Bold" Margin="0,0,0,4"/>
         <TextBox Grid.Row="1" x:Name="TitleBox" MaxLength="200" Margin="0,0,0,12"/>
         <TextBlock Grid.Row="2" Text="分组" FontWeight="Bold" Margin="0,0,0,4"/>
-        <ComboBox Grid.Row="3" x:Name="GroupCombo" Margin="0,0,0,12" MaxDropDownHeight="120"/>
-        <GroupBox Grid.Row="4" Header="到期时间" Padding="10" Margin="0,0,0,12">
+        <ComboBox Grid.Row="3" x:Name="GroupCombo" Margin="0,0,0,6" MaxDropDownHeight="120"/>
+        <CheckBox Grid.Row="4" x:Name="RecurringCheck" Content="定期刷新任务" Margin="0,4,0,0" Checked="RecurringCheck_Changed" Unchecked="RecurringCheck_Changed"/>
+        <StackPanel Grid.Row="5" x:Name="RecurringPanel" Orientation="Horizontal" Margin="0,4,0,6" Visibility="Collapsed">
+            <TextBlock Text="每" VerticalAlignment="Center" Margin="20,0,4,0"/>
+            <TextBox x:Name="CycleDaysBox" Text="7" Width="50" VerticalAlignment="Center" TextAlignment="Right"/>
+            <TextBlock Text=" 天刷新" VerticalAlignment="Center"/>
+        </StackPanel>
+        <GroupBox Grid.Row="6" x:Name="PeriodGroupBox" Header="到期时间" Padding="10" Margin="0,0,0,12">
             <StackPanel>
                 <RadioButton x:Name="RadioRemaining" Content="剩余时间" IsChecked="True" Margin="0,0,0,6"/>
                 <Grid Margin="16,0,0,0" IsEnabled="{Binding IsChecked, ElementName=RadioRemaining}">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                     <TextBox Grid.Column="0" x:Name="RemainDaysBox" Text="0" Width="50" VerticalAlignment="Center" TextAlignment="Right"/>
-                    <TextBlock Grid.Column="1" Text=" 天  " VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text=" 天 " VerticalAlignment="Center"/>
                     <TextBox Grid.Column="2" x:Name="RemainHoursBox" Text="0" Width="50" VerticalAlignment="Center" TextAlignment="Right"/>
                     <TextBlock Grid.Column="3" Text=" 小时" VerticalAlignment="Center"/>
                 </Grid>
@@ -29,7 +35,7 @@
                 </Grid>
             </StackPanel>
         </GroupBox>
-        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center">
+        <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Center">
             <Button Content="保存" Width="80" Height="30" x:Name="SaveBtn" Click="SaveBtn_Click" IsDefault="True" Margin="0,0,10,0"/>
             <Button Content="取消" Width="80" Height="30" IsCancel="True"/>
         </StackPanel>

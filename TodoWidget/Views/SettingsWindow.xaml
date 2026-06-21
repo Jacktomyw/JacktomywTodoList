@@ -1,0 +1,28 @@
+<Window x:Class="TodoWidget.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="设置" Height="360" Width="360" WindowStartupLocation="Manual" ResizeMode="NoResize" WindowStyle="ToolWindow">
+    <Grid Margin="20">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Text="通用设置" FontSize="16" FontWeight="Bold" Margin="0,0,0,16"/>
+        <Border Grid.Row="1" Background="#0A000000" Padding="12,10" CornerRadius="6" Margin="0,0,0,10">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0"><TextBlock Text="开机自动启动" FontSize="14" FontWeight="SemiBold"/><TextBlock Text="系统启动时自动运行 TodoWidget" FontSize="11" Foreground="#666666" Margin="0,2,0,0"/></StackPanel>
+                <ToggleButton Grid.Column="1" x:Name="StartupToggle" Width="44" Height="24" VerticalAlignment="Center" Click="StartupToggle_Click"/>
+            </Grid>
+        </Border>
+        <Border Grid.Row="2" Background="#0A000000" Padding="12,10" CornerRadius="6" Margin="0,0,0,10">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0"><TextBlock Text="退出确认" FontSize="14" FontWeight="SemiBold"/><TextBlock Text="点击关闭按钮时弹出确认窗口" FontSize="11" Foreground="#666666" Margin="0,2,0,0"/></StackPanel>
+                <ToggleButton Grid.Column="1" x:Name="CloseConfirmToggle" Width="44" Height="24" VerticalAlignment="Center" Click="CloseConfirmToggle_Click"/>
+            </Grid>
+        </Border>
+        <Border Grid.Row="3" Background="#0A000000" Padding="12,10" CornerRadius="6">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="待办事项删除确认" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <ComboBox Grid.Column="1" x:Name="DeleteConfirmCombo" Width="130" Height="28" HorizontalAlignment="Right" VerticalAlignment="Center" SelectionChanged="DeleteConfirm_SelectionChanged"/>
+            </Grid>
+        </Border>
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0"><Button Content="关闭" Width="80" Height="30" IsCancel="True"/></StackPanel>
+    </Grid>
+</Window>

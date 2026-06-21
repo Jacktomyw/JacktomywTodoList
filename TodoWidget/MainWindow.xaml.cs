@@ -21,7 +21,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        try { var f = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TodoWidget"); System.IO.Directory.CreateDirectory(f); _repo = new TodoRepository(System.IO.Path.Combine(f, "todos.db")); _settingsSvc = new SettingsService(f); _vm = new MainViewModel(_repo); DataContext = _vm; }
+        try { var f = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data"); System.IO.Directory.CreateDirectory(f); _repo = new TodoRepository(System.IO.Path.Combine(f, "todos.db")); _settingsSvc = new SettingsService(f); _vm = new MainViewModel(_repo); DataContext = _vm; }
         catch (Exception ex) { MessageBox.Show($"初始化失败!\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error); Application.Current.Shutdown(); return; }
         Native.DesktopWindow.PinToDesktop(this); Opacity = 0.85;
         _vm.IsGroupedMode = _settingsSvc.IsGroupedMode; UpdateGroupModeBtn();

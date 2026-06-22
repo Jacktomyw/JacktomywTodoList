@@ -84,7 +84,7 @@ public class TodoRepository : IDisposable
         var due = await _db.TodoItems.Where(i => i.IsRecurring && i.DueDate != null && i.DueDate.Value <= now).ToListAsync();
         foreach (var it in due)
         {
-            while (it.DueDate!.Value <= now) it.DueDate = it.DueDate.Value.AddDays(it.RecurringIntervalDays);
+            if (it.RecurringIntervalDays <= 0) it.RecurringIntervalDays = 1; int safety = 0; while (it.DueDate!.Value <= now && safety++ < 10000) it.DueDate = it.DueDate.Value.AddDays(it.RecurringIntervalDays);
             it.IsCompleted = false;
         }
         if (due.Count > 0) await _db.SaveChangesAsync();

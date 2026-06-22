@@ -14,6 +14,7 @@ public class MainViewModel : INotifyPropertyChanged
     private System.Timers.Timer _countdownTimer;
     private System.Timers.Timer? _midnightTimer;
     private readonly ConcurrentDictionary<int, System.Timers.Timer> _recurringTimers = new();
+    private const double MaxTimerInterval = int.MaxValue;
 
     public ObservableCollection<TodoItem> AllItems { get; } = new();
     public ObservableCollection<TodoGroupViewModel> Groups { get; } = new();
@@ -84,19 +85,19 @@ public class MainViewModel : INotifyPropertyChanged
         RescheduleAllRecurringTimers();
     }
 
-    // --- per-task recurring timers ---
     private void ScheduleRecurringTimer(TodoItem item)
     {
         if (!item.IsRecurring || !item.DueDate.HasValue) return;
         CancelRecurringTimer(item.Id);
         var msUntil = (item.DueDate.Value - DateTime.Now).TotalMilliseconds;
         if (msUntil <= 0) msUntil = 1000;
+        if (msUntil > MaxTimerInterval) msUntil = MaxTimerInterval;
         var timer = new System.Timers.Timer(msUntil) { AutoReset = false };
         var id = item.Id;
         timer.Elapsed += async (_, _) =>
         {
             _recurringTimers.TryRemove(id, out _);
-            await _repo.AdvancePastDueRecurringAsync(); // advances this specific item + any others
+            await _repo.AdvancePastDueRecurringAsync();
             var disp = Application.Current?.Dispatcher;
             if (disp != null) await disp.InvokeAsync(async () => await ReloadFromDbAsync());
             else await ReloadFromDbAsync();

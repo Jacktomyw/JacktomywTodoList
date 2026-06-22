@@ -9,10 +9,11 @@ public partial class AddEditDialog : Window
     private TodoRepository _repo;
     private TodoItem? _edit;
     private Func<Task> _onSaved;
+    private string? _initialGroup;
 
-    public AddEditDialog(TodoRepository repo, TodoItem? edit, Func<Task> onSaved)
+    public AddEditDialog(TodoRepository repo, TodoItem? edit, Func<Task> onSaved, string? initialGroup = null)
     {
-        _repo = repo; _edit = edit; _onSaved = onSaved;
+        _repo = repo; _edit = edit; _onSaved = onSaved; _initialGroup = initialGroup;
         InitializeComponent();
         DatePick.SelectedDate = DateTime.Today.AddDays(1);
         Loaded += async (_, _) =>
@@ -28,6 +29,7 @@ public partial class AddEditDialog : Window
                 if (_edit.IsRecurring) { RecurringCheck.IsChecked = true; CycleDaysBox.Text = _edit.RecurringIntervalDays.ToString(); }
                 if (_edit.DueDate.HasValue) { RadioSpecific.IsChecked = true; DatePick.SelectedDate = _edit.DueDate.Value.Date; TimeBox.Text = _edit.DueDate.Value.Hour.ToString("D2"); }
             }
+            if (_edit == null && _initialGroup != null) GroupCombo.SelectedItem = _initialGroup;
             GroupCombo.SelectedItem ??= _edit?.GroupName ?? "未分组";
         };
     }
@@ -58,6 +60,7 @@ public partial class AddEditDialog : Window
             due = new DateTime(raw.Year, raw.Month, raw.Day, raw.Hour, 0, 0);
             if (raw.Minute > 0) due = due.Value.AddHours(1);
         }
+        if (isRecurring && due.HasValue) { var now = DateTime.Now; int safety = 0; while (due.Value <= now && safety++ < 10000) due = due.Value.AddDays(cycleDays); }
         var grp = GroupCombo.SelectedItem?.ToString() ?? "未分组";
         if (_edit != null) { _edit.Title = TitleBox.Text.Trim(); _edit.GroupName = grp; _edit.DueDate = due; _edit.IsRecurring = isRecurring; _edit.RecurringIntervalDays = cycleDays; await _repo.UpdateAsync(_edit); }
         else await _repo.AddAsync(new TodoItem { Title = TitleBox.Text.Trim(), GroupName = grp, DueDate = due, IsRecurring = isRecurring, RecurringIntervalDays = cycleDays, CreatedAt = DateTime.Now });

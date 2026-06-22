@@ -28,10 +28,11 @@
                         <Border Margin="0,4,0,0" Padding="0" CornerRadius="6" Background="#12FFFFFF">
                             <StackPanel>
                                 <Grid Height="32" Background="#1AFFFFFF" MouseLeftButtonDown="GroupHeader_Click" Cursor="Hand">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="{Binding ExpandIcon}" Foreground="#AAAAAA" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                     <TextBlock Grid.Column="1" Text="{Binding GroupName}" Foreground="White" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                                    <TextBlock Grid.Column="2" FontSize="11" Foreground="#777777" VerticalAlignment="Center" Margin="0,0,8,0"><Run Text="{Binding VisibleCount, Mode=OneWay}"/><Run Text=" 项"/></TextBlock>
+                                    <TextBlock Grid.Column="2" FontSize="11" Foreground="#777777" VerticalAlignment="Center" Margin="0,0,4,0"><Run Text="{Binding VisibleCount, Mode=OneWay}"/><Run Text=" 项"/></TextBlock>
+                                    <Button Grid.Column="3" Content="+" Width="22" Height="22" FontSize="12" Foreground="#88CC88" Background="Transparent" BorderThickness="0" Cursor="Hand" Click="GroupAddBtn_Click" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 </Grid>
                                 <ItemsControl Margin="14,4,4,4" ItemsSource="{Binding Items}">
                                     <ItemsControl.Style>

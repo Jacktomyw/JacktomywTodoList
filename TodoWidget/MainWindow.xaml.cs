@@ -46,6 +46,8 @@ public partial class MainWindow : Window
 
     private void SendToBottom() { var h = new WindowInteropHelper(this).Handle; if (h != IntPtr.Zero) Native.DesktopWindow.SetWindowPos(h, new IntPtr(1), 0, 0, 0, 0, 1 | 2 | 0x10 | 0x40); }
 
+    private void GroupAddBtn_Click(object sender, RoutedEventArgs e) { var g = (TodoGroupViewModel)((Button)sender).DataContext; new Views.AddEditDialog(_repo, null, () => _ = _vm.LoadAsync(), g.GroupName) { Owner = this, Topmost = true }.ShowDialog(); SendToBottom(); }
+
     private void ChkBtn_Loaded(object sender, RoutedEventArgs e) { var b = (Button)sender; if (b.DataContext is TodoItem it) { b.Content = it.IsCompleted ? "\u2713" : ""; b.Foreground = it.IsCompleted ? new SolidColorBrush(Color.FromRgb(0x88, 0xFF, 0x88)) : new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)); } }
     private void GroupHeader_Click(object sender, MouseButtonEventArgs e) { if (((Grid)sender).DataContext is TodoGroupViewModel g) g.IsExpanded = !g.IsExpanded; }
     private async void ChkBtn_Click(object sender, RoutedEventArgs e) { var b = (Button)sender; if (b.DataContext is TodoItem it) { it.IsCompleted = !it.IsCompleted; b.Content = it.IsCompleted ? "\u2713" : ""; b.Foreground = it.IsCompleted ? new SolidColorBrush(Color.FromRgb(0x88, 0xFF, 0x88)) : new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)); await _repo.UpdateAsync(it); await _vm.LoadAsync(); } }

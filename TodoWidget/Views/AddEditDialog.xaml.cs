@@ -67,4 +67,7 @@ public partial class AddEditDialog : Window
         await _onSaved();
         DialogResult = true; Close();
     }
+
+
+    public string FinalGroup => GroupCombo.SelectedItem?.ToString() ?? "未分组";
 }

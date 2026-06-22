@@ -121,6 +121,9 @@ public class MainViewModel : INotifyPropertyChanged
 
     private async Task RebuildGroupsAsync()
     {
+        var expandStates = new Dictionary<string, bool>();
+        foreach (var g in Groups) expandStates[g.GroupName] = g.IsExpanded;
+
         Groups.Clear();
         if (!IsGroupedMode)
         {
@@ -145,6 +148,12 @@ public class MainViewModel : INotifyPropertyChanged
             var gvm = new TodoGroupViewModel { GroupName = name, SortOrder = dict.GetValueOrDefault(name, int.MaxValue) };
             foreach (var item in sorted) gvm.Items.Add(item);
             Groups.Add(gvm);
+        }
+
+        foreach (var g in Groups)
+        {
+            if (expandStates.TryGetValue(g.GroupName, out var wasExpanded))
+                g.IsExpanded = wasExpanded;
         }
     }
 

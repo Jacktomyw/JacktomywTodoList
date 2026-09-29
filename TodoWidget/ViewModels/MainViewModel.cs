@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Threading;
 using TodoWidget.Data;
 using TodoWidget.Models;
 
@@ -11,9 +12,11 @@ namespace TodoWidget.ViewModels;
 public class MainViewModel : INotifyPropertyChanged
 {
     private readonly TodoRepository _repo;
-    private System.Timers.Timer _countdownTimer;
+    private readonly Dispatcher _ui = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+    private DispatcherTimer _countdownTimer;
     private System.Timers.Timer? _midnightTimer;
     private readonly ConcurrentDictionary<int, System.Timers.Timer> _recurringTimers = new();
+    private bool _reloading;
     private const double MaxTimerInterval = int.MaxValue;
 
     public ObservableCollection<TodoItem> AllItems { get; } = new();
@@ -25,20 +28,22 @@ public class MainViewModel : INotifyPropertyChanged
         _repo = repo;
         var now = DateTime.Now;
         var msToNextMinute = (60 - now.Second) * 1000 - now.Millisecond;
-        _countdownTimer = new System.Timers.Timer(msToNextMinute) { AutoReset = false };
-        _countdownTimer.Elapsed += CountdownFirstTick;
+        _countdownTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(msToNextMinute) };
+        _countdownTimer.Tick += CountdownFirstTick;
         _countdownTimer.Start();
     }
 
-    private void CountdownFirstTick(object? sender, System.Timers.ElapsedEventArgs e)
+    private void CountdownFirstTick(object? sender, EventArgs e)
     {
-        RefreshCountdown();
         _countdownTimer.Stop();
-        _countdownTimer = new System.Timers.Timer(60_000) { AutoReset = true };
-        _countdownTimer.Elapsed += (_, _) => RefreshCountdown();
+        RefreshCountdown();
+        _countdownTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMinutes(1) };
+        _countdownTimer.Tick += (_, _) => RefreshCountdown();
         _countdownTimer.Start();
     }
 
+    // System.Timers.Timer 的回调跑在线程池线程上,而 AllItems/Groups 绑定在 UI 线程、
+    // _repo 持有的单个 DbContext 也不是线程安全的。所有定时器回调都必须经 _ui 回到 UI 线程执行。
     private void ScheduleMidnightTimer()
     {
         _midnightTimer?.Stop(); _midnightTimer?.Dispose();
@@ -47,14 +52,12 @@ public class MainViewModel : INotifyPropertyChanged
         var msUntilMidnight = (nextMidnight - now).TotalMilliseconds;
         if (msUntilMidnight <= 0) msUntilMidnight = 1000;
         _midnightTimer = new System.Timers.Timer(msUntilMidnight) { AutoReset = false };
-        _midnightTimer.Elapsed += MidnightElapsed;
+        _midnightTimer.Elapsed += (_, _) => _ = _ui.InvokeAsync(async () =>
+        {
+            await DeleteExpiredAndReloadAsync();
+            ScheduleMidnightTimer();
+        });
         _midnightTimer.Start();
-    }
-
-    private async void MidnightElapsed(object? sender, System.Timers.ElapsedEventArgs e)
-    {
-        await DeleteExpiredAndReloadAsync();
-        ScheduleMidnightTimer();
     }
 
     private async Task DeleteExpiredAndReloadAsync()
@@ -76,13 +79,22 @@ public class MainViewModel : INotifyPropertyChanged
         await ReloadFromDbAsync();
     }
 
+    // 调用方都在 UI 线程(用户操作,或定时器经 _ui 封送)。共享 DbContext 无锁,
+    // 若在 await 让出点被重入,会在 _db 上产生交错的查询/保存,导致异常或陈旧对象覆盖数据;
+    // 这里直接跳过并发的重复重载(在飞的那次本来就会读到最新数据)。
     private async Task ReloadFromDbAsync()
     {
-        var items = await _repo.GetAllAsync();
-        AllItems.Clear();
-        foreach (var item in items) AllItems.Add(item);
-        await RebuildGroupsAsync();
-        RescheduleAllRecurringTimers();
+        if (_reloading) return;
+        _reloading = true;
+        try
+        {
+            var items = await _repo.GetAllAsync();
+            AllItems.Clear();
+            foreach (var item in items) AllItems.Add(item);
+            await RebuildGroupsAsync();
+            RescheduleAllRecurringTimers();
+        }
+        finally { _reloading = false; }
     }
 
     private void ScheduleRecurringTimer(TodoItem item)
@@ -97,10 +109,11 @@ public class MainViewModel : INotifyPropertyChanged
         timer.Elapsed += async (_, _) =>
         {
             _recurringTimers.TryRemove(id, out _);
-            await _repo.AdvancePastDueRecurringAsync();
-            var disp = Application.Current?.Dispatcher;
-            if (disp != null) await disp.InvokeAsync(async () => await ReloadFromDbAsync());
-            else await ReloadFromDbAsync();
+            await _ui.InvokeAsync(async () =>
+            {
+                await _repo.AdvancePastDueRecurringAsync();
+                await ReloadFromDbAsync();
+            });
         };
         timer.Start();
         _recurringTimers[id] = timer;
